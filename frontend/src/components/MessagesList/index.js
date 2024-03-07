@@ -425,9 +425,40 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
   const handleCloseMessageOptionsMenu = (e) => {
     setAnchorEl(null);
   };
-
-  const checkMessageMedia = (message) => {
-    if (message.mediaType === "image") {
+const checkMessageMedia = (message) => {
+    if(message.mediaType === "location" && message.body.split('|').length >= 2) {
+      let locationParts = message.body.split('|')
+      let imageLocation = locationParts[0]		
+      let linkLocation = locationParts[1]
+      
+      let descriptionLocation = null
+      
+      if(locationParts.length > 2)
+        descriptionLocation = message.body.split('|')[2]
+      
+      return <LocationPreview image={imageLocation} link={linkLocation} description={descriptionLocation} />
+    }
+	  else if (message.mediaType === "vcard") {
+		//console.log("vcard")
+		//console.log(message)
+		let array = message.body.split("\n");
+		let obj = [];
+		let contact = "";
+		for (let index = 0; index < array.length; index++) {
+			const v = array[index];
+			let values = v.split(":");
+			for (let ind = 0; ind < values.length; ind++) {
+				if (values[ind].indexOf("+") !== -1) {
+					obj.push({ number: values[ind] });
+				}
+				if (values[ind].indexOf("FN") !== -1) {
+					contact = values[ind + 1];
+				}
+			}
+		}
+		return <VcardPreview contact={contact} numbers={obj[0].number} />
+	} 
+  else  if (message.mediaType === "image") {
       return <ModalImageCors imageUrl={message.mediaUrl} />;
     }
     if (message.mediaType === "audio") {
@@ -558,7 +589,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       </div>
     );
   };
-
+/*
   const isVCard = (message) => {
     return message.includes('BEGIN:VCARD');
   };
@@ -634,7 +665,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       </div>
     )
   };
-
+*/
 
   const renderMessages = () => {
     if (messagesList.length > 0) {
@@ -664,19 +695,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   </span>
                 )}
 
-                {message.mediaUrl && checkMessageMedia(message)}
+                {(message.mediaUrl || message.mediaType === "vcard" ) && checkMessageMedia(message)}
 
-                {message.body.includes('data:image') ? messageLocation(message.body, message.createdAt)
-                  :
-                  isVCard(message.body) ?
-                    <div className={[classes.textContentItem, { marginRight: 0 }]}>
-                      {vCard(message.body)}
-                    </div>
-
-                    :
-
-
-                    (<div className={classes.textContentItem}>
+                     (<div className={classes.textContentItem}>
                       {message.quotedMsg && renderQuotedMessage(message)}
                       <MarkdownWrapper>{message.body}</MarkdownWrapper>
                       <span className={classes.timestamp}>
@@ -705,7 +726,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                 >
                   <ExpandMore />
                 </IconButton>
-                {message.mediaUrl && checkMessageMedia(message)}
+                {(message.mediaUrl || message.mediaType === "vcard" ) && checkMessageMedia(message)}
                 <div
                   className={clsx(classes.textContentItem, {
                     [classes.textContentItemDeleted]: message.isDeleted,
@@ -718,15 +739,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                       className={classes.deletedIcon}
                     />
                   )}
-                  {message.body.includes('data:image') ? messageLocation(message.body, message.createdAt)
-                  :
-                  isVCard(message.body) ?
-                    <div className={[classes.textContentItem]}>
-                      {vCard(message.body)}
-                    </div>
-
-                    :
-                  message.quotedMsg && renderQuotedMessage(message)}
+                  {message.quotedMsg && renderQuotedMessage(message)}
                   <MarkdownWrapper>{message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
                     {format(parseISO(message.createdAt), "HH:mm")}
